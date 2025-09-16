@@ -35,7 +35,7 @@ jobs:
         WEIRDHOST_SERVER_URLS: ${{ secrets.WEIRDHOST_SERVER_URLS }}
       run: python main.py
       
-    - name: Commit README file
+    - name: Commit README file (single account)
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -46,46 +46,30 @@ jobs:
           git commit -m "📝 更新运行状态: $(date +'%Y-%m-%d %H:%M:%S')"
           git push origin HEAD:main
 
-    # ================= 自动多账号循环步骤 =================
-    - name: Run auto renewal for multiple accounts
+    # ================= 多账号处理 =================
+    - name: Run auto renewal for account 1
+      env:
+        REMEMBER_WEB_COOKIE: ${{ secrets.REMEMBER_WEB_COOKIE_1 }}
+        WEIRDHOST_EMAIL: ${{ secrets.WEIRDHOST_EMAIL_1 }}
+        WEIRDHOST_PASSWORD: ${{ secrets.WEIRDHOST_PASSWORD_1 }}
+        WEIRDHOST_SERVER_URLS: ${{ secrets.WEIRDHOST_SERVER_URLS_1 }}
+      run: python main.py
+
+    - name: Run auto renewal for account 2
+      env:
+        REMEMBER_WEB_COOKIE: ${{ secrets.REMEMBER_WEB_COOKIE_2 }}
+        WEIRDHOST_EMAIL: ${{ secrets.WEIRDHOST_EMAIL_2 }}
+        WEIRDHOST_PASSWORD: ${{ secrets.WEIRDHOST_PASSWORD_2 }}
+        WEIRDHOST_SERVER_URLS: ${{ secrets.WEIRDHOST_SERVER_URLS_2 }}
+      run: python main.py
+
+    - name: Commit README file (multi accounts)
       run: |
-        echo "🚀 开始处理多账号"
-
-        # 自动获取 Secrets 中账号序号（Cookie 或邮箱都可用）
-        for i in $(seq 1 20); do
-          cookie_var="REMEMBER_WEB_COOKIE_$i"
-          email_var="WEIRDHOST_EMAIL_$i"
-          password_var="WEIRDHOST_PASSWORD_$i"
-          server_var="WEIRDHOST_SERVER_URLS_$i"
-
-          # 检查是否存在至少一个变量
-          cookie_val=${{ secrets[cookie_var] || '' }}
-          email_val=${{ secrets[email_var] || '' }}
-          password_val=${{ secrets[password_var] || '' }}
-          server_val=${{ secrets[server_var] || '' }}
-
-          if [ -z "$cookie_val" ] && [ -z "$email_val" ]; then
-            # 当前账号不存在，跳过
-            continue
-          fi
-
-          if [ -z "$server_val" ]; then
-            echo "⚠️ 账号 $i 未设置服务器URL，跳过"
-            continue
-          fi
-
-          echo "🔹 处理账号 $i"
-
-          # 设置环境变量
-          export REMEMBER_WEB_COOKIE="$cookie_val"
-          export WEIRDHOST_EMAIL="$email_val"
-          export WEIRDHOST_PASSWORD="$password_val"
-          export WEIRDHOST_SERVER_URLS="$server_val"
-
-          # 运行脚本
-          python main.py
-
-          echo "✅ 账号 $i 完成"
-        done
-
-        echo "🎉 多账号处理完成"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add README.md
+        if git diff --cached --quiet; then
+          echo "README文件无变化，无需提交"
+        else
+          git commit -m "📝 更新运行状态: $(date +'%Y-%m-%d %H:%M:%S')"
+          git push origin HEAD:main
